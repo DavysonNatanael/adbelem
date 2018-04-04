@@ -23,6 +23,9 @@
 		private $cargo_geral;
 		private $email_geral;
 
+		// Data de Cadastro
+		private $dtcadastro;
+
 		//********** Getters & Setters - ID, Login e Senha ***********\\
 		public function getIdMn() {
 			return $this->id_mn;
@@ -131,6 +134,42 @@
 			$this->email_geral = $value;
 		}
 
+		//********** Getters & Setters - Data Cadastro ***********\\
+		public function getDtCadastro() {
+			return $this->dtcadastro;
+		}
+
+		public function setDtCadastro($value) {
+			$this->dtcadastro = $value;
+		}
+
+		//********** Método para realizar o 'set' dos dados ***********\\
+		public function setData($data) {
+
+			// ID, Login e Senha
+			$this->setIdMn($data['id_mn']);
+			$this->setLoginMn($data['login_mn']);
+			$this->setSenhaMn($data['senha_mn']);
+
+			// Ele
+			$this->setNomeEle($data['nome_ele']);
+			$this->setNascimentoEle(new DateTime($data['nascimento_ele']));
+			$this->setContatoEle($data['contato_ele']);
+
+			// Ela
+			$this->setNomeEla($data['nome_ela']);
+			$this->setNascimentoEla(new DateTime($data['nascimento_ela']));
+			$this->setContatoEla($data['contato_ela']);
+
+			// Geral
+			$this->setBairroGeral($data['bairro_geral']);
+			$this->setTemploGeral($data['templo_geral']);
+			$this->setCargoGeral($data['cargo_geral']);
+			$this->setEmailGeral($data['email_geral']);
+			$this->setDtCadastro(new DateTime($data['dtcadastro']));
+
+		}
+
 		//********** Função para buscar o Ministro pela ID ***********\\
 		public function loadById($id) {
 			
@@ -142,28 +181,7 @@
 
 			if (count($results) > 0) {
 				
-				$row = $results[0];
-
-				// ID, Login e Senha
-				$this->setIdMn($row['id_mn']);
-				$this->setLoginMn($row['login_mn']);
-				$this->setSenhaMn($row['senha_mn']);
-
-				// Ele
-				$this->setNomeEle($row['nome_ele']);
-				$this->setNascimentoEle(new DateTime($row['nascimento_ele']));
-				$this->setContatoEle($row['contato_ele']);
-
-				// Ela
-				$this->setNomeEla($row['nome_ela']);
-				$this->setNascimentoEla(new DateTime($row['nascimento_ela']));
-				$this->setContatoEla($row['contato_ela']);
-
-				// Geral
-				$this->setBairroGeral($row['bairro_geral']);
-				$this->setTemploGeral($row['templo_geral']);
-				$this->setCargoGeral($row['cargo_geral']);
-				$this->setEmailGeral($row['email_geral']);
+				$this->setData($results[0]);
 
 			}
 
@@ -204,35 +222,89 @@
 
 			if (count($results) > 0) {
 				
-				$row = $results[0];
-				
-				$row = $results[0];
-
-				// ID, Login e Senha
-				$this->setIdMn($row['id_mn']);
-				$this->setLoginMn($row['login_mn']);
-				$this->setSenhaMn($row['senha_mn']);
-
-				// Ele
-				$this->setNomeEle($row['nome_ele']);
-				$this->setNascimentoEle(new DateTime($row['nascimento_ele']));
-				$this->setContatoEle($row['contato_ele']);
-
-				// Ela
-				$this->setNomeEla($row['nome_ela']);
-				$this->setNascimentoEla(new DateTime($row['nascimento_ela']));
-				$this->setContatoEla($row['contato_ela']);
-
-				// Geral
-				$this->setBairroGeral($row['bairro_geral']);
-				$this->setTemploGeral($row['templo_geral']);
-				$this->setCargoGeral($row['cargo_geral']);
-				$this->setEmailGeral($row['email_geral']);
+				$this->setData($results[0]);
 
 			} else {
 
 				throw new Exception("Login e/ou Senha inválidos");
 				
+
+			}
+
+		}
+
+		//********** Função para cadastrar (insert) um Ministro ***********\\
+
+		/*public function criaLogin() {
+			
+			$p1 = explode(" ", mb_strtolower($this->getNomeEle())); // 1º Nome Dele
+			$p2 = explode(" ", mb_strtolower($this->getNomeEla())); // 1º Nome Dela
+			$p3 = explode("/", $this->getNascimentoEle()); // Dia Nascimento Dele
+			$p4 = explode("/", $this->getNascimentoEla()); // Dia Nascimento Dela
+
+			$login = $p1[0]."_".$p2[0].$p3[0].$p4[0]; // Juntar as partes para criar o Login
+
+
+			//***** Verificar se já existe o login *****\\
+			$sql = new Sql();
+
+			$results = $sql->select("SELECT * FROM tb_ministros WHERE login_mn = :LOGIN", array(":LOGIN"=>$login));
+
+		}*/
+
+		//********** Função para cadastrar (insert) um Ministro ***********\\
+
+		public function insert() {
+
+			$sql = new Sql();
+
+			//***** Preparar as informações para o Login *****\\
+			$p1 = explode(" ", mb_strtolower($this->getNomeEle())); // 1º Nome Dele
+			$p2 = explode(" ", mb_strtolower($this->getNomeEla())); // 1º Nome Dela
+			$p3 = explode("/", $this->getNascimentoEle()); // Dia Nascimento Dele
+			$p4 = explode("/", $this->getNascimentoEla()); // Dia Nascimento Dela
+
+			$login = $p1[0]."_".$p2[0].$p3[0].$p4[0]; // Juntar as partes para criar o Login
+
+
+			// Verificar se já existe o login
+			$results = $sql->select("SELECT * FROM tb_ministros WHERE login_mn = :LOGIN", array(":LOGIN"=>$login));
+
+			if (count($results) < 0 ) {
+
+				$results = $sql->select("CALL sp_ministros_insert
+					(
+						:NOME_ELE, :NASCIMENTO_ELE, :CONTATO_ELE,
+						:NOME_ELA, :NASCIMENTO_ELA, :CONTATO_ELA,
+						:BAIRRO_GERAL, :TEMPLO_GERAL, :CARGO_GERAL, EMAIL:GERAL
+					)",
+					array (
+						':NOME_ELE'=>$this->getNomeEle(),
+						':NASCIMENTO_ELE'=>$this->getNomeEle(),
+						':CONTATO_ELE'=>$this->getContatoEle(),
+
+						':NOME_ELA'=>$this->getNomeEla(),
+						':NASCIMENTO_ELA'=>$this->getNascimentoEla(),
+						':CONTATO_ELA'=>$this->getContatoEla(),
+
+						':BAIRRO_GERAL'=>$this->getBairroGeral(),
+						':TEMPLO_GERAL'=>$this->getTemploGeral(),
+						':CARGO_GERAL'=>$this->getCargoGeral(),
+						'EMAIL:GERAL'=>$this->getEmailGeral()
+					)
+				);
+
+				if (count($results) > 0) {
+
+					$this->setData($results[0]);
+
+				}
+
+			} else {
+
+				// throw new Exception("Erro L1. Favor entrar em contato com a administração do sistema.");
+				$erro = "Erro";
+				echo $erro;
 
 			}
 
